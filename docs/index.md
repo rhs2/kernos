@@ -1,5 +1,4 @@
 ---
-title: Kernos
 hide:
   - navigation
 ---
