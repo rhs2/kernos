@@ -1,0 +1,103 @@
+/* Kernos documentation theme: a warm neutral ground, one deep accent, and
+   generous measure. Overrides only the Material tokens that matter. */
+
+:root {
+  --md-primary-fg-color: #1f2a37;
+  --md-primary-fg-color--light: #2f3d4d;
+  --md-primary-fg-color--dark: #131b25;
+  --md-accent-fg-color: #b4532a;
+  --md-accent-fg-color--transparent: rgba(180, 83, 42, 0.12);
+  --md-typeset-a-color: #b4532a;
+  --md-code-font-size: 0.82em;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #0f1720;
+  --md-accent-fg-color: #e08a5c;
+  --md-typeset-a-color: #e08a5c;
+  --md-default-bg-color: #0f1720;
+  --md-default-fg-color: #e6e9ee;
+}
+
+.md-header__button.md-logo svg {
+  color: #fff;
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+.md-typeset {
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset h2 {
+  font-weight: 650;
+  margin-top: 2.2em;
+}
+
+.md-typeset table:not([class]) {
+  font-size: 0.72rem;
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.md-typeset code {
+  border-radius: 4px;
+}
+
+/* Landing page */
+.kn-hero {
+  padding: 1.2rem 0 0.4rem;
+}
+
+.kn-hero p.kn-lead {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  max-width: 42rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.kn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.9rem;
+  margin: 1.4rem 0;
+}
+
+.kn-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  background: var(--md-default-bg-color);
+}
+
+.kn-card h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.kn-card p {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.kn-pill {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  background: var(--md-accent-fg-color--transparent);
+  color: var(--md-accent-fg-color);
+  margin-right: 0.3rem;
+}

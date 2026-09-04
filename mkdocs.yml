@@ -1,0 +1,105 @@
+site_name: Kernos
+site_url: https://rhs2.github.io/kernos/
+site_description: One runtime, every department. Agents that work inside their remit, stop at the gates you set, and keep running for months without anyone editing the code.
+repo_url: https://github.com/rhs2/kernos
+repo_name: rhs2/kernos
+edit_uri: edit/main/docs/
+copyright: Apache License 2.0
+
+docs_dir: docs
+exclude_docs: |
+  PLAN.md
+  spec/
+
+theme:
+  name: material
+  logo: assets/kernos-mark.svg
+  favicon: assets/kernos-mark.svg
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+extra_css:
+  - assets/kernos.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Quickstart: getting-started/quickstart.md
+      - Install: getting-started/install.md
+      - The Halcyon example: getting-started/halcyon.md
+  - Concepts:
+      - Architecture: concepts/architecture.md
+      - Runs and the event log: concepts/runs-and-events.md
+      - Remits: concepts/remits.md
+      - Policy and approvals: concepts/policy.md
+      - Bundles: concepts/bundles.md
+      - Running unattended: concepts/unattended.md
+      - The model layer: concepts/models.md
+  - Guides:
+      - Write a bundle: guides/write-a-bundle.md
+      - Write a policy: guides/write-a-policy.md
+      - Write a connector: guides/write-a-connector.md
+      - Evaluate and promote: guides/evaluate-and-promote.md
+      - Deploy: guides/deploy.md
+      - Operate: guides/operate.md
+  - Reference:
+      - Kernel API: reference/kernel-api.md
+      - Gateway API: reference/gateway-api.md
+      - Event log: reference/events.md
+      - Remit token: reference/remit.md
+      - Policy language: reference/policy-language.md
+      - Bundle format: reference/bundle-format.md
+      - CLI: reference/cli.md
+      - Python SDK: reference/python-sdk.md
+      - TypeScript SDK: reference/typescript-sdk.md
+      - Connector SDK (Go): reference/connector-sdk.md
+      - Configuration: reference/configuration.md
+  - Security: security.md
+  - Changelog: changelog.md
