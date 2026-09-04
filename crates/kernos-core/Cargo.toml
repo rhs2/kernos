@@ -1,0 +1,27 @@
+[package]
+name = "kernos-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Kernos kernel as a library: append-only event log with hash chain, deterministic replay, scheduler with leases, budgets, remits and compensation"
+keywords = ["agents", "event-sourcing", "workflow", "replay", "kernos"]
+categories = ["asynchronous", "database-implementations"]
+readme = "README.md"
+
+[dependencies]
+kernos-policy = { version = "0.1.0", path = "../kernos-policy" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+base64 = { workspace = true }
+rand = { workspace = true }
+regex = { workspace = true }
+rusqlite = { workspace = true }
+ed25519-dalek = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

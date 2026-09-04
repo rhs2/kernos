@@ -1,0 +1,32 @@
+[workspace]
+resolver = "2"
+members = ["crates/kernos-policy", "crates/kernos-core", "crates/kernos"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/rhs2/kernos"
+rust-version = "1.85"
+
+[workspace.dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+thiserror = "2.0.20"
+sha2 = "0.10.9"
+base64 = "0.22.1"
+rand = "0.8.5"
+regex = "1.13.1"
+rusqlite = { version = "0.40.2", default-features = false, features = ["bundled", "cache"] }
+ed25519-dalek = { version = "2.2.0", features = ["pkcs8", "pem"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "time", "signal", "sync"] }
+axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "query", "tokio", "matched-path", "tracing"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["fmt", "json", "env-filter"] }
+clap = { version = "4.6.6", features = ["derive", "env"] }
+ureq = { version = "3.4.0", default-features = false, features = ["rustls", "json"] }
+tempfile = "3.27.0"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

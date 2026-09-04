@@ -1,0 +1,16 @@
+[package]
+name = "kernos-policy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Policy language and evaluator for Kernos: declarative allow, deny and approval rules over proposed agent actions"
+keywords = ["policy", "authorization", "agents", "approval", "kernos"]
+categories = ["parser-implementations", "authentication"]
+readme = "README.md"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

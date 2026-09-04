@@ -1,0 +1,34 @@
+[package]
+name = "kernos"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Kernos kernel and control plane: HTTP server and operator CLI for company-wide LLM agent automation with signed remits, policy gates and a replayable event log"
+keywords = ["agents", "automation", "workflow", "cli", "kernos"]
+categories = ["command-line-utilities", "web-programming::http-server"]
+readme = "README.md"
+default-run = "kernos"
+
+[[bin]]
+name = "kernos"
+path = "src/main.rs"
+
+[dependencies]
+kernos-core = { version = "0.1.0", path = "../kernos-core" }
+kernos-policy = { version = "0.1.0", path = "../kernos-policy" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+ureq = { workspace = true }
+base64 = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+rusqlite = { workspace = true }
