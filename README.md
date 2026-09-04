@@ -11,10 +11,11 @@
   <a href="https://crates.io/crates/kernos"><img alt="crates.io" src="https://img.shields.io/crates/v/kernos.svg"></a>
   <a href="https://pypi.org/project/kernos-sdk/"><img alt="PyPI" src="https://img.shields.io/pypi/v/kernos-sdk.svg"></a>
   <a href="https://www.npmjs.com/package/@kernos/sdk"><img alt="npm" src="https://img.shields.io/npm/v/%40kernos%2Fsdk.svg"></a>
+  <a href="https://pkg.go.dev/github.com/rhs2/kernos/gateway"><img alt="Go reference" src="https://pkg.go.dev/badge/github.com/rhs2/kernos/gateway.svg"></a>
   <a href="LICENSE"><img alt="Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg"></a>
 </p>
 
-<p align="center"><a href="https://rhs2.github.io/kernos/">Documentation</a> · <a href="https://rhs2.github.io/kernos/getting-started/quickstart/">Quickstart</a> · <a href="https://rhs2.github.io/kernos/reference/kernel-api/">API reference</a> · <a href="CHANGELOG.md">Changelog</a></p>
+<p align="center"><a href="https://rhs2.github.io/kernos/">Documentation</a> · <a href="https://rhs2.github.io/kernos/getting-started/quickstart/">Quickstart</a> · <a href="https://rhs2.github.io/kernos/reference/kernel-api/">API reference</a> · <a href="https://github.com/rhs2/kernos/releases/latest">Releases</a> · <a href="CHANGELOG.md">Changelog</a></p>
 
 ---
 
@@ -48,14 +49,15 @@ connector or bundle ships through the same evaluate, promote-or-rollback gate.
 
 ## What is in the box
 
-| Package | Registry | What it is |
+| Package | Install | What it is |
 |---|---|---|
-| `kernos` | crates.io, binaries | The kernel and control plane: durable hash-chained event log, deterministic replay, scheduler with leases, budgets, compensation, remits, policy, approvals, and the operator CLI |
-| `kernos-core`, `kernos-policy` | crates.io | The kernel as a library, and the policy language on its own |
-| `kernos-gateway` | Go module `github.com/rhs2/kernos/gateway`, binaries | The only path to company systems: remit verification on every call, scope derivation, idempotency, circuit breakers, contract canaries, connectors for SQL, HTTP, files and MCP servers, and the `connect` SDK for writing your own |
-| `kernos-sdk` | PyPI | The reasoning worker: model router over three Claude tiers, stable cache prefix, structured outputs, refusal handling, the data boundary, and the evaluation harness with its promotion gate |
-| `@kernos/sdk` | npm | A typed TypeScript client for the control plane |
-| Images | GHCR | `kernos-kernel`, `kernos-gateway`, `kernos-worker` |
+| [`kernos`](https://crates.io/crates/kernos) | `cargo install kernos` | The kernel and control plane: durable hash-chained event log, deterministic replay, scheduler with leases, budgets, compensation, remits, policy, approvals, and the operator CLI |
+| [`kernos-core`](https://crates.io/crates/kernos-core) · [`kernos-policy`](https://crates.io/crates/kernos-policy) | `cargo add kernos-core` | The kernel as a library, and the policy language on its own |
+| [`kernos/gateway`](https://pkg.go.dev/github.com/rhs2/kernos/gateway) | `go get github.com/rhs2/kernos/gateway` | The only path to company systems: remit verification on every call, scope derivation, idempotency, circuit breakers, contract canaries, connectors for SQL, HTTP, files and MCP servers, and the `connect` SDK for writing your own |
+| [`kernos-sdk`](https://pypi.org/project/kernos-sdk/) | `pip install kernos-sdk` | The reasoning worker: model router over three Claude tiers, stable cache prefix, structured outputs, refusal handling, the data boundary, and the evaluation harness with its promotion gate |
+| [`@kernos/sdk`](https://www.npmjs.com/package/@kernos/sdk) | `npm install @kernos/sdk` | A typed TypeScript client for the control plane |
+| [Images](https://github.com/rhs2/kernos/pkgs/container/kernos-kernel) | `docker pull ghcr.io/rhs2/kernos-kernel` | `kernos-kernel`, `kernos-gateway`, `kernos-worker` |
+| [Binaries](https://github.com/rhs2/kernos/releases/latest) | download | Linux and macOS, arm64 and x86_64, with checksums |
 
 Rust for the parts that must never lose a byte, Go for hundreds of flaky
 integrations, Python where the model tooling lives, TypeScript for the surface

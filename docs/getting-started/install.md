@@ -13,8 +13,12 @@ services and the workers wherever the model traffic should originate.
     kernos --version
     ```
 
-    Or download a binary for Linux or macOS from the
-    [releases page](https://github.com/rhs2/kernos/releases).
+    On [crates.io](https://crates.io/crates/kernos), alongside the two
+    libraries it is built from,
+    [`kernos-core`](https://crates.io/crates/kernos-core) and
+    [`kernos-policy`](https://crates.io/crates/kernos-policy), which you can
+    depend on separately. Or download a binary for Linux or macOS from the
+    [releases page](https://github.com/rhs2/kernos/releases/latest).
 
 === "Gateway (Go)"
 
@@ -23,7 +27,11 @@ services and the workers wherever the model traffic should originate.
     kernos-gateway --help
     ```
 
-    Binaries for Linux and macOS are attached to every release.
+    Documented at
+    [pkg.go.dev](https://pkg.go.dev/github.com/rhs2/kernos/gateway), including
+    the `connect` package for writing your own connector. Binaries for Linux
+    and macOS are attached to every
+    [release](https://github.com/rhs2/kernos/releases/latest).
 
 === "Worker and SDK (Python)"
 
@@ -33,7 +41,7 @@ services and the workers wherever the model traffic should originate.
     kernos-eval --help
     ```
 
-    Python 3.10 or newer.
+    On [PyPI](https://pypi.org/project/kernos-sdk/). Python 3.10 or newer.
 
 === "Client (TypeScript)"
 
@@ -41,7 +49,8 @@ services and the workers wherever the model traffic should originate.
     npm install @kernos/sdk
     ```
 
-    Node 18 or newer, or any browser with `fetch`.
+    On [npm](https://www.npmjs.com/package/@kernos/sdk), published with
+    provenance. Node 18 or newer, or any browser with `fetch`.
 
 === "Containers"
 
@@ -50,6 +59,9 @@ services and the workers wherever the model traffic should originate.
     docker pull ghcr.io/rhs2/kernos-gateway:latest
     docker pull ghcr.io/rhs2/kernos-worker:latest
     ```
+
+    Listed under the repository's
+    [packages](https://github.com/rhs2?tab=packages&repo_name=kernos).
 
     `deploy/docker-compose.yml` in the repository starts all three with the
     reference connectors.

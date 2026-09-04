@@ -71,12 +71,21 @@ ships through one evaluate and promote-or-rollback gate.
 
 ## Packages
 
-| Package | Where | What |
-|---|---|---|
-| `kernos`, `kernos-core`, `kernos-policy` | crates.io | Kernel, control plane, CLI, policy language |
-| `github.com/rhs2/kernos/gateway` | Go module | Gateway binary and the `connect` SDK |
-| `kernos-sdk` | PyPI | Reasoning worker and evaluation harness |
-| `@kernos/sdk` | npm | TypeScript client |
-| `ghcr.io/rhs2/kernos-{kernel,gateway,worker}` | GHCR | Container images |
+Every layer ships as a package in its own ecosystem's registry, so you can
+depend on the part you need rather than adopting the whole platform.
 
-The source is at [github.com/rhs2/kernos](https://github.com/rhs2/kernos).
+| Package | Install | What it is |
+|---|---|---|
+| [`kernos`](https://crates.io/crates/kernos) | `cargo install kernos` | The kernel and control-plane server, and the operator CLI |
+| [`kernos-core`](https://crates.io/crates/kernos-core) | `cargo add kernos-core` | The kernel as a library: event log, replay, scheduler, remits, budgets |
+| [`kernos-policy`](https://crates.io/crates/kernos-policy) | `cargo add kernos-policy` | The policy language and evaluator, usable on its own |
+| [`kernos-sdk`](https://pypi.org/project/kernos-sdk/) | `pip install kernos-sdk` | The reasoning worker and the evaluation harness |
+| [`@kernos/sdk`](https://www.npmjs.com/package/@kernos/sdk) | `npm install @kernos/sdk` | The typed TypeScript client |
+| [`kernos/gateway`](https://pkg.go.dev/github.com/rhs2/kernos/gateway) | `go get github.com/rhs2/kernos/gateway` | The gateway and the `connect` connector SDK |
+| [Container images](https://github.com/rhs2/kernos/pkgs/container/kernos-kernel) | `docker pull ghcr.io/rhs2/kernos-kernel` | Kernel, gateway and worker, also `kernos-gateway` and `kernos-worker` |
+| [Binaries](https://github.com/rhs2/kernos/releases/latest) | download | Linux and macOS, arm64 and x86_64, with checksums |
+
+The source is at [github.com/rhs2/kernos](https://github.com/rhs2/kernos), and
+every one of those artefacts is published from a single version tag by
+[one workflow](https://github.com/rhs2/kernos/blob/main/.github/workflows/release.yml)
+that runs the whole test suite and the acceptance suite first.
