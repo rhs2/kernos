@@ -119,6 +119,9 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdk/python/dist
+          # A re-run of a partly finished release must not fail here just
+          # because this version was already uploaded.
+          skip-existing: true
 
   npm:
     needs: gate
@@ -147,8 +150,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "gateway/${GITHUB_REF_NAME}" "${GITHUB_SHA}"
-          git push origin "gateway/${GITHUB_REF_NAME}"
+          tag="gateway/${GITHUB_REF_NAME}"
+          if git ls-remote --exit-code --tags origin "$tag" >/dev/null 2>&1; then
+            echo "$tag already exists, nothing to do"
+          else
+            git tag "$tag" "${GITHUB_SHA}"
+            git push origin "$tag"
+          fi
       - name: ask the proxy to index it
         run: curl -fsS "https://proxy.golang.org/github.com/rhs2/kernos/gateway/@v/${GITHUB_REF_NAME}.info" || true
 
@@ -172,7 +180,10 @@ jobs:
             goos: darwin
             goarch: arm64
             suffix: macos-arm64
-          - os: macos-13
+          # Intel macOS is cross-compiled from the arm64 runner: GitHub retired
+          # the macos-13 image, so a job asking for it waits for a runner that
+          # will never come and holds the whole release open.
+          - os: macos-14
             target: x86_64-apple-darwin
             goos: darwin
             goarch: amd64
