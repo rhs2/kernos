@@ -1,0 +1,21 @@
+# Kernos secret scanning configuration. The default gitleaks rules apply; this
+# file only adds allow-lists for values that look like secrets but are not.
+
+title = "kernos"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "documentation and fixtures that carry example values by design"
+paths = [
+  # Every assignment here is an empty placeholder or a public default; the
+  # template exists so a real .env never has to be guessed at.
+  '''^\.env\.example$''',
+  '''docs/reference/.*\.md''',
+  '''tests/acceptance/fixtures/.*''',
+]
+regexes = [
+  '''krt1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.key_[a-z0-9]+''',   # example remit tokens in docs and tests
+  '''\$\{[A-Z_]+\}''',                                        # environment substitution placeholders
+]

@@ -1,0 +1,54 @@
+# Rust
+/target/
+crates/**/target/
+
+# Go
+gateway/bin/
+gateway/*.test
+gateway/coverage.out
+
+# Python
+sdk/python/.venv/
+sdk/python/dist/
+sdk/python/build/
+sdk/python/**/*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# TypeScript
+node_modules/
+sdk/typescript/dist/
+*.tsbuildinfo
+
+# Runtime data (never commit a database, a key or a log)
+kernos-data/
+gateway-data/
+*.db
+*.db-wal
+*.db-shm
+*.key
+!bundles/reference/halcyon/dev-signing/*.pub
+*.log
+tests/acceptance/.work/
+
+# Environment and editors
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
+
+# Design and build documents stay private; the public contract is the docs site.
+docs/PLAN.md
+docs/spec/
+**/NOTES.md
+.private/
+
+# Docs site build output
+site/
+.venv-docs/
+docs/changelog.md
