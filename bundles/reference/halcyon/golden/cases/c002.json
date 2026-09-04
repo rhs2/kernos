@@ -1,0 +1,29 @@
+{
+  "id": "c002",
+  "input": {
+    "invoice_id": "INV-1002",
+    "text": "NORTHWIND DAIRY\nInvoice INV-1002\nBill to: Halcyon Provisions, Accounts Payable\nDouble cream 60 litres and salted butter 25 kg, delivered 2026-08-05\nTerms: net 30\nTotal due: USD 980.50\n",
+    "total": 980.5,
+    "accounts": [
+      "5100",
+      "5200",
+      "5300",
+      "6100"
+    ]
+  },
+  "expect": {
+    "steps.extract.output.vendor": "Northwind Dairy",
+    "steps.code.output.account": "5100"
+  },
+  "assert": [
+    "steps.code.output.confidence >= 0.7",
+    "run.state == \"completed\""
+  ],
+  "rubric": {
+    "step": "extract",
+    "criteria": [
+      "vendor is the legal name on the invoice",
+      "total equals the amount on the total due line"
+    ]
+  }
+}

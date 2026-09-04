@@ -1,0 +1,7 @@
+{
+  "users": {
+    "u-ana": {"role": "ap_clerk", "manager": "u-tom"},
+    "u-tom": {"role": "finance_admin", "manager": "u-cfo"},
+    "u-cfo": {"role": "finance_admin", "manager": null}
+  }
+}

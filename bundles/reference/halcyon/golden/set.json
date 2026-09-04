@@ -1,0 +1,7 @@
+{
+  "name": "invoice_intake",
+  "bundle": "halcyon.finance.invoice_intake@1.0.0",
+  "workflow": "intake",
+  "version": 1,
+  "description": "Six Northwind Dairy invoices for Halcyon Provisions; every case passes under the mock provider."
+}

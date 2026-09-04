@@ -1,0 +1,29 @@
+{
+  "id": "c004",
+  "input": {
+    "invoice_id": "INV-1004",
+    "text": "NORTHWIND DAIRY\nInvoice INV-1004\nBill to: Halcyon Provisions, Accounts Payable\nAged cheddar wheels 18 units, delivered 2026-08-12 to the north depot\nTerms: net 30\nTotal due: USD 3,475.25\n",
+    "total": 3475.25,
+    "accounts": [
+      "5100",
+      "5200",
+      "5300",
+      "6100"
+    ]
+  },
+  "expect": {
+    "steps.extract.output.vendor": "Northwind Dairy",
+    "steps.code.output.account": "5100"
+  },
+  "assert": [
+    "steps.code.output.confidence >= 0.7",
+    "run.state == \"completed\""
+  ],
+  "rubric": {
+    "step": "extract",
+    "criteria": [
+      "vendor is the legal name on the invoice",
+      "total equals the amount on the total due line"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "listen": "127.0.0.1:7402",
+  "kernel_url": "http://127.0.0.1:7401",
+  "token": null,
+  "data_dir": "${KERNOS_GATEWAY_DATA}",
+  "connectors": [
+    {"name": "ledger", "type": "sqlite", "path": "${HALCYON_LEDGER_DB}",
+     "init_sql": "ledger.sql",
+     "tools": {
+       "post_entry":  {"description": "Post a journal entry", "writes": true,
+                       "statement": "insert into ledger_entries(invoice_id, vendor, account, amount, posted_at) values (:invoice_id, :vendor, :account, :amount, :now) returning id as entry_id, posted_at",
+                       "input_schema": {"type": "object", "required": ["invoice_id", "vendor", "account", "amount"]},
+                       "contract": {"required": {"entry_id": "number", "posted_at": "string"}}},
+       "void_entry":  {"description": "Void a posted entry", "writes": true,
+                       "statement": "update ledger_entries set voided_at=:now, void_reason=:reason where id=:entry_id returning id as entry_id, voided_at",
+                       "contract": {"required": {"entry_id": "number", "voided_at": "string"}}},
+       "lookup_vendor": {"description": "Find a vendor", "writes": false,
+                       "statement": "select id, name, terms from vendors where name = :name",
+                       "contract": {"required": {"rows": "list"}}}
+     },
+     "probe": {"tool": "lookup_vendor", "args": {"name": "__probe__"}}}
+  ]
+}

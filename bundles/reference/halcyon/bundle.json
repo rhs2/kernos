@@ -1,0 +1,730 @@
+{
+  "format": "kernos.bundle/1",
+  "name": "halcyon.finance.invoice_intake",
+  "version": "1.0.0",
+  "department": "finance",
+  "description": "Invoice intake, coding and posting for Halcyon Provisions.",
+  "policies": [
+    "finance-default"
+  ],
+  "tools": [
+    {
+      "id": "ledger.post_entry",
+      "description": "Post a journal entry",
+      "writes": true
+    },
+    {
+      "id": "ledger.void_entry",
+      "description": "Void a posted entry",
+      "writes": true
+    },
+    {
+      "id": "ledger.lookup_vendor",
+      "description": "Find a vendor by name",
+      "writes": false
+    },
+    {
+      "id": "http.get",
+      "description": "Fetch a URL over HTTP from an allowed host",
+      "writes": false
+    },
+    {
+      "id": "test.slow",
+      "description": "Gateway test tool: sleeps for the given number of milliseconds (present only with KERNOS_GATEWAY_TEST_TOOLS=1)",
+      "writes": false
+    },
+    {
+      "id": "test.fail",
+      "description": "Gateway test tool: always fails deterministically (present only with KERNOS_GATEWAY_TEST_TOOLS=1)",
+      "writes": false
+    }
+  ],
+  "prompts": {
+    "extract": {
+      "system": "You extract fields from supplier invoices for Halcyon Provisions. Answer only with the JSON the schema asks for.",
+      "user": "Invoice text:\n{{input.text}}"
+    },
+    "code": {
+      "system": "You assign a general-ledger account to an invoice line for Halcyon Provisions. Choose one account from the list you are given and report your confidence as a number between 0 and 1. Answer only with the JSON the schema asks for.",
+      "user": "Vendor: {{steps.extract.output.vendor}}\nDescription: {{steps.extract.output.description}}\nAccounts: {{input.accounts}}"
+    }
+  },
+  "mock": {
+    "extract": {
+      "vendor": "Northwind Dairy",
+      "invoice_id": "{{input.invoice_id}}",
+      "total": {
+        "$ref": "input.total"
+      },
+      "currency": "USD",
+      "description": "Milk delivery"
+    },
+    "code": {
+      "account": "5100",
+      "confidence": 0.93
+    }
+  },
+  "workflows": {
+    "intake": {
+      "description": "One invoice from text to posted entry.",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "invoice_id",
+          "text",
+          "total"
+        ],
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "minimum": 0
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "probe_url": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": "extract",
+          "kind": "model",
+          "tier": "standard",
+          "effort": "low",
+          "prompt": "extract",
+          "description": "Read the vendor, invoice number, total and currency out of the invoice text.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "vendor",
+              "invoice_id",
+              "total",
+              "currency"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "invoice_id": {
+                "type": "string"
+              },
+              "total": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "on_refusal": "park",
+          "max_output_tokens": 1024
+        },
+        {
+          "id": "code",
+          "kind": "model",
+          "tier": "cheap",
+          "effort": "low",
+          "prompt": "code",
+          "description": "Choose the general-ledger account for the invoice and report a confidence.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "account",
+              "confidence"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "escalate": {
+            "when_confidence_below": 0.7,
+            "to_tier": "standard"
+          }
+        },
+        {
+          "id": "propose_payment",
+          "kind": "action",
+          "description": "Propose paying the invoice; policy decides whether a person must approve.",
+          "action": {
+            "kind": "payment.issue",
+            "amount": {
+              "$ref": "steps.extract.output.total"
+            },
+            "currency": {
+              "$ref": "steps.extract.output.currency"
+            },
+            "writes_to_system_of_record": true,
+            "target": "ledger",
+            "data_classes": [],
+            "paths": [],
+            "idempotency_key": {
+              "$ref": "input.invoice_id"
+            },
+            "summary": "Pay invoice {{input.invoice_id}} to {{steps.extract.output.vendor}}"
+          }
+        },
+        {
+          "id": "post",
+          "kind": "tool",
+          "tool": "ledger.post_entry",
+          "description": "Post the coded invoice as a journal entry in the ledger.",
+          "args": {
+            "invoice_id": {
+              "$ref": "input.invoice_id"
+            },
+            "vendor": {
+              "$ref": "steps.extract.output.vendor"
+            },
+            "account": {
+              "$ref": "steps.code.output.account"
+            },
+            "amount": {
+              "$ref": "steps.extract.output.total"
+            }
+          },
+          "idempotency_key": "{{input.invoice_id}}",
+          "compensation": {
+            "tool": "ledger.void_entry",
+            "args": {
+              "entry_id": {
+                "$ref": "steps.post.output.entry_id"
+              },
+              "reason": "run abandoned"
+            }
+          }
+        }
+      ]
+    },
+    "intake_slow": {
+      "description": "The intake workflow with a four second test.slow step before the posting step (acceptance scenario A1).",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "invoice_id",
+          "text",
+          "total"
+        ],
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "minimum": 0
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "probe_url": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": "extract",
+          "kind": "model",
+          "tier": "standard",
+          "effort": "low",
+          "prompt": "extract",
+          "description": "Read the vendor, invoice number, total and currency out of the invoice text.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "vendor",
+              "invoice_id",
+              "total",
+              "currency"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "invoice_id": {
+                "type": "string"
+              },
+              "total": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "on_refusal": "park",
+          "max_output_tokens": 1024
+        },
+        {
+          "id": "code",
+          "kind": "model",
+          "tier": "cheap",
+          "effort": "low",
+          "prompt": "code",
+          "description": "Choose the general-ledger account for the invoice and report a confidence.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "account",
+              "confidence"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "escalate": {
+            "when_confidence_below": 0.7,
+            "to_tier": "standard"
+          }
+        },
+        {
+          "id": "propose_payment",
+          "kind": "action",
+          "description": "Propose paying the invoice; policy decides whether a person must approve.",
+          "action": {
+            "kind": "payment.issue",
+            "amount": {
+              "$ref": "steps.extract.output.total"
+            },
+            "currency": {
+              "$ref": "steps.extract.output.currency"
+            },
+            "writes_to_system_of_record": true,
+            "target": "ledger",
+            "data_classes": [],
+            "paths": [],
+            "idempotency_key": {
+              "$ref": "input.invoice_id"
+            },
+            "summary": "Pay invoice {{input.invoice_id}} to {{steps.extract.output.vendor}}"
+          }
+        },
+        {
+          "id": "wait",
+          "kind": "tool",
+          "tool": "test.slow",
+          "description": "Acceptance fixture: hold the step for four seconds so a worker can be killed inside it.",
+          "args": {
+            "ms": 4000
+          }
+        },
+        {
+          "id": "post",
+          "kind": "tool",
+          "tool": "ledger.post_entry",
+          "description": "Post the coded invoice as a journal entry in the ledger.",
+          "args": {
+            "invoice_id": {
+              "$ref": "input.invoice_id"
+            },
+            "vendor": {
+              "$ref": "steps.extract.output.vendor"
+            },
+            "account": {
+              "$ref": "steps.code.output.account"
+            },
+            "amount": {
+              "$ref": "steps.extract.output.total"
+            }
+          },
+          "idempotency_key": "{{input.invoice_id}}",
+          "compensation": {
+            "tool": "ledger.void_entry",
+            "args": {
+              "entry_id": {
+                "$ref": "steps.post.output.entry_id"
+              },
+              "reason": "run abandoned"
+            }
+          }
+        }
+      ]
+    },
+    "double_post_then_fail": {
+      "description": "Posts the invoice twice with distinct idempotency keys, then fails deterministically (acceptance scenario A3: abandon and compensate).",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "invoice_id",
+          "text",
+          "total"
+        ],
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "minimum": 0
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "probe_url": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": "extract",
+          "kind": "model",
+          "tier": "standard",
+          "effort": "low",
+          "prompt": "extract",
+          "description": "Read the vendor, invoice number, total and currency out of the invoice text.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "vendor",
+              "invoice_id",
+              "total",
+              "currency"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "invoice_id": {
+                "type": "string"
+              },
+              "total": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "on_refusal": "park",
+          "max_output_tokens": 1024
+        },
+        {
+          "id": "code",
+          "kind": "model",
+          "tier": "cheap",
+          "effort": "low",
+          "prompt": "code",
+          "description": "Choose the general-ledger account for the invoice and report a confidence.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "account",
+              "confidence"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "escalate": {
+            "when_confidence_below": 0.7,
+            "to_tier": "standard"
+          }
+        },
+        {
+          "id": "post_a",
+          "kind": "tool",
+          "tool": "ledger.post_entry",
+          "description": "Post the coded invoice as a journal entry in the ledger.",
+          "args": {
+            "invoice_id": {
+              "$ref": "input.invoice_id"
+            },
+            "vendor": {
+              "$ref": "steps.extract.output.vendor"
+            },
+            "account": {
+              "$ref": "steps.code.output.account"
+            },
+            "amount": {
+              "$ref": "steps.extract.output.total"
+            }
+          },
+          "idempotency_key": "{{input.invoice_id}}-a",
+          "compensation": {
+            "tool": "ledger.void_entry",
+            "args": {
+              "entry_id": {
+                "$ref": "steps.post_a.output.entry_id"
+              },
+              "reason": "run abandoned"
+            }
+          }
+        },
+        {
+          "id": "post_b",
+          "kind": "tool",
+          "tool": "ledger.post_entry",
+          "description": "Post the coded invoice as a journal entry in the ledger.",
+          "args": {
+            "invoice_id": {
+              "$ref": "input.invoice_id"
+            },
+            "vendor": {
+              "$ref": "steps.extract.output.vendor"
+            },
+            "account": {
+              "$ref": "steps.code.output.account"
+            },
+            "amount": {
+              "$ref": "steps.extract.output.total"
+            }
+          },
+          "idempotency_key": "{{input.invoice_id}}-b",
+          "compensation": {
+            "tool": "ledger.void_entry",
+            "args": {
+              "entry_id": {
+                "$ref": "steps.post_b.output.entry_id"
+              },
+              "reason": "run abandoned"
+            }
+          }
+        },
+        {
+          "id": "boom",
+          "kind": "tool",
+          "tool": "test.fail",
+          "description": "Acceptance fixture: a tool call that always fails deterministically.",
+          "args": {}
+        }
+      ]
+    },
+    "http_first": {
+      "description": "Fetches probe_url through the http connector first, then runs intake without the payment action (acceptance scenarios A5 and A8).",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "invoice_id",
+          "text",
+          "total"
+        ],
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "minimum": 0
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "probe_url": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": "fetch",
+          "kind": "tool",
+          "tool": "http.get",
+          "description": "Fetch a document from an upstream service before extraction.",
+          "args": {
+            "url": "{{input.probe_url}}"
+          }
+        },
+        {
+          "id": "extract",
+          "kind": "model",
+          "tier": "standard",
+          "effort": "low",
+          "prompt": "extract",
+          "description": "Read the vendor, invoice number, total and currency out of the invoice text.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "vendor",
+              "invoice_id",
+              "total",
+              "currency"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "invoice_id": {
+                "type": "string"
+              },
+              "total": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "on_refusal": "park",
+          "max_output_tokens": 1024
+        },
+        {
+          "id": "code",
+          "kind": "model",
+          "tier": "cheap",
+          "effort": "low",
+          "prompt": "code",
+          "description": "Choose the general-ledger account for the invoice and report a confidence.",
+          "output_schema": {
+            "type": "object",
+            "required": [
+              "account",
+              "confidence"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "escalate": {
+            "when_confidence_below": 0.7,
+            "to_tier": "standard"
+          }
+        },
+        {
+          "id": "post",
+          "kind": "tool",
+          "tool": "ledger.post_entry",
+          "description": "Post the coded invoice as a journal entry in the ledger.",
+          "args": {
+            "invoice_id": {
+              "$ref": "input.invoice_id"
+            },
+            "vendor": {
+              "$ref": "steps.extract.output.vendor"
+            },
+            "account": {
+              "$ref": "steps.code.output.account"
+            },
+            "amount": {
+              "$ref": "steps.extract.output.total"
+            }
+          },
+          "idempotency_key": "{{input.invoice_id}}",
+          "compensation": {
+            "tool": "ledger.void_entry",
+            "args": {
+              "entry_id": {
+                "$ref": "steps.post.output.entry_id"
+              },
+              "reason": "run abandoned"
+            }
+          }
+        }
+      ]
+    },
+    "poison": {
+      "description": "A single step that always fails deterministically (acceptance scenario A9: quarantine).",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "invoice_id",
+          "text",
+          "total"
+        ],
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "minimum": 0
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "probe_url": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "id": "boom",
+          "kind": "tool",
+          "tool": "test.fail",
+          "description": "Acceptance fixture: a tool call that always fails deterministically.",
+          "args": {}
+        }
+      ]
+    }
+  }
+}

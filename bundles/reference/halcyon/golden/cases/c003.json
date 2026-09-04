@@ -1,0 +1,29 @@
+{
+  "id": "c003",
+  "input": {
+    "invoice_id": "INV-1003",
+    "text": "NORTHWIND DAIRY\nInvoice INV-1003\nBill to: Halcyon Provisions, Accounts Payable\nNatural yoghurt 300 tubs and skimmed milk 120 crates, delivered 2026-08-10\nTerms: net 30\nTotal due: USD 2,310.00\n",
+    "total": 2310.0,
+    "accounts": [
+      "5100",
+      "5200",
+      "5300",
+      "6100"
+    ]
+  },
+  "expect": {
+    "steps.extract.output.vendor": "Northwind Dairy",
+    "steps.code.output.account": "5100"
+  },
+  "assert": [
+    "steps.code.output.confidence >= 0.7",
+    "run.state == \"completed\""
+  ],
+  "rubric": {
+    "step": "extract",
+    "criteria": [
+      "vendor is the legal name on the invoice",
+      "total equals the amount on the total due line"
+    ]
+  }
+}

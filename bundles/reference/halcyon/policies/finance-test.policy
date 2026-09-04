@@ -1,0 +1,21 @@
+# finance-test v1: finance-default with a five second SLA on the payment rule,
+# so the acceptance suite can watch an approval escalate.
+policy "finance-test"
+
+require approval when
+  action.kind == "payment.issue" and action.amount >= 5000
+  -> approver: role("finance_admin"), sla: 5s, escalate_to: reporting_line
+
+require approval when
+  action.writes_to_system_of_record and run.remit.autonomy == "supervised"
+  -> approver: run.requested_by.manager, sla: 24h
+
+require approval when
+  action.kind == "code.merge" and action.touches_path("infra/**")
+  -> approver: role("platform_owner"), sla: 8h
+
+deny when
+  action.touches_data_class("personal") and not run.remit.grants("pii")
+
+allow when
+  action.kind == "invoice.read"
