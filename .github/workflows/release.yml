@@ -1,0 +1,218 @@
+# Release: push a tag vX.Y.Z and every artefact ships from one run.
+#
+#   crates.io   kernos-policy, kernos-core, kernos        secret CARGO_REGISTRY_TOKEN
+#   PyPI        kernos-sdk                               trusted publishing (OIDC), no token
+#   npm         @kernos/sdk                              secret NPM_TOKEN (granular, publish)
+#   Go          github.com/rhs2/kernos/gateway           tag gateway/vX.Y.Z, created here
+#   GHCR        ghcr.io/rhs2/kernos-{kernel,gateway,worker}   GITHUB_TOKEN
+#   GitHub      release with kernel and gateway binaries for linux and macOS
+#
+# Every job runs only after the full test matrix and the acceptance suite pass
+# on the tagged commit, and after the version check proves the tag matches the
+# versions in every manifest and the changelog.
+
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/check_versions.py --tag "${GITHUB_REF_NAME}"
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  gate:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: gateway/go.mod
+          cache-dependency-path: gateway/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: make test
+      - run: make accept
+
+  crates:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: publish in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish -p kernos-policy
+          sleep 30
+          cargo publish -p kernos-core
+          sleep 30
+          cargo publish -p kernos
+
+  pypi:
+    needs: gate
+    runs-on: ubuntu-latest
+    environment: pypi
+    defaults:
+      run:
+        working-directory: sdk/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build && python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdk/python/dist
+
+  npm:
+    needs: gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/typescript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  go-module:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: tag the gateway module so `go get` resolves the version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "gateway/${GITHUB_REF_NAME}" "${GITHUB_SHA}"
+          git push origin "gateway/${GITHUB_REF_NAME}"
+      - name: ask the proxy to index it
+        run: curl -fsS "https://proxy.golang.org/github.com/rhs2/kernos/gateway/@v/${GITHUB_REF_NAME}.info" || true
+
+  binaries:
+    needs: gate
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            goos: linux
+            goarch: amd64
+            suffix: linux-x86_64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            goos: linux
+            goarch: arm64
+            suffix: linux-arm64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            goos: darwin
+            goarch: arm64
+            suffix: macos-arm64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            goos: darwin
+            goarch: amd64
+            suffix: macos-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: gateway/go.mod
+      - run: cargo build --release -p kernos --target ${{ matrix.target }}
+      - run: cd gateway && GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 go build -o bin/kernos-gateway ./cmd/kernos-gateway
+      - run: |
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/kernos dist/kernos-${{ matrix.suffix }}
+          cp gateway/bin/kernos-gateway dist/kernos-gateway-${{ matrix.suffix }}
+          cd dist && shasum -a 256 * > SHA256SUMS-${{ matrix.suffix }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.suffix }}
+          path: dist/*
+
+  images:
+    needs: gate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [kernel, gateway, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/${{ matrix.image }}.Dockerfile
+          push: true
+          tags: |
+            ghcr.io/rhs2/kernos-${{ matrix.image }}:${{ github.ref_name }}
+            ghcr.io/rhs2/kernos-${{ matrix.image }}:latest
+
+  github-release:
+    needs: [binaries, crates, pypi, npm, go-module, images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binaries-*
+          merge-multiple: true
+          path: dist
+      - name: changelog section for this version
+        run: |
+          python3 - "$GITHUB_REF_NAME" > notes.md <<'EOF'
+          import re, sys
+          v = sys.argv[1].lstrip("v")
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          m = re.search(rf"^## \[{re.escape(v)}\].*?(?=^## \[|\Z)", text, re.M | re.S)
+          print(m.group(0) if m else f"Release {v}")
+          EOF
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: notes.md
+          files: dist/*

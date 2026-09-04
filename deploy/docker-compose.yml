@@ -1,0 +1,47 @@
+# One-command local stack: kernel, gateway with the reference connectors, and a
+# worker on the mock provider. Set ANTHROPIC_API_KEY and KERNOS_PROVIDER=anthropic
+# to use real models.
+#
+#   docker compose -f deploy/docker-compose.yml up --build
+#
+services:
+  kernel:
+    build:
+      context: ..
+      dockerfile: deploy/docker/kernel.Dockerfile
+    ports: ["7401:7401"]
+    volumes:
+      - kernel-data:/var/lib/kernos
+      - ../bundles/reference/halcyon/directory.json:/var/lib/kernos/directory.json:ro
+    environment:
+      KERNOS_TOKEN: ${KERNOS_TOKEN:-}
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/docker/gateway.Dockerfile
+    depends_on: [kernel]
+    ports: ["7402:7402"]
+    volumes:
+      - gateway-data:/var/lib/kernos-gateway
+      - ../bundles/reference/halcyon/gateway.compose.json:/etc/kernos/gateway.json:ro
+      - ../bundles/reference/halcyon/ledger.sql:/etc/kernos/ledger.sql:ro
+    environment:
+      KERNOS_GATEWAY_DATA: /var/lib/kernos-gateway
+      HALCYON_LEDGER_DB: /var/lib/kernos-gateway/halcyon-ledger.db
+      KERNOS_TOKEN: ${KERNOS_TOKEN:-}
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/docker/worker.Dockerfile
+    depends_on: [kernel, gateway]
+    environment:
+      KERNOS_PROVIDER: ${KERNOS_PROVIDER:-mock}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      KERNOS_TOKEN: ${KERNOS_TOKEN:-}
+    command: ["--worker-id", "wrk-compose-1", "--concurrency", "2"]
+
+volumes:
+  kernel-data:
+  gateway-data:
