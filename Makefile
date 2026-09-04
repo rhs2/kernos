@@ -52,7 +52,9 @@ test-go:
 test-python: build-python
 	cd sdk/python && $(CURDIR)/$(PYBIN)/python -m pytest -q
 
-test-ts:
+# npm test runs against the built package, and neither node_modules nor dist
+# exist in a fresh checkout, so the build has to come first.
+test-ts: build-ts
 	cd sdk/typescript && npm test --silent
 
 # ----------------------------------------------------------- acceptance ----
